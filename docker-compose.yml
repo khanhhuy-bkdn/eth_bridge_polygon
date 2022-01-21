@@ -1,0 +1,13 @@
+version: "3.2"
+
+services:
+  node:
+    image: build.node
+    container_name: abc_node
+    ports:
+      - 8545:8545
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    restart:
+      on-failure

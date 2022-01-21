@@ -1,0 +1,49 @@
+name: Auto check
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'contracts/**'
+      - '.github/workflows/**'
+  pull_request:
+    branches: 
+      - master
+    paths:
+      - 'contracts/**'
+      - '.github/workflows/**'
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['16.x']
+
+    steps:
+      - name: Checkout project current
+        uses: actions/checkout@v2
+        with:
+          path: ./projectA
+
+      - name: Checkout project B
+        uses: actions/checkout@master
+        with:
+          token: ${{ secrets.ACCESS_TOKEN }}
+          repository: khanhhuy-bkdn/custom-tree-grid
+          path: ./projectB
+
+      - name: Run project A
+        run: |
+          cd ./projectA
+          npm install
+          mv .env.example .env
+          docker-compose up -d
+          npx hardhat run scripts/deploy.js --network localhost
+
+      - name: Run project B
+        run: |
+          cd ./projectB
+          npm install  

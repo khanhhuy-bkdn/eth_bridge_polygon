@@ -1,0 +1,12 @@
+FROM node:16.3.0-alpine
+
+# Copy artifact
+WORKDIR .
+COPY contracts .
+COPY package.json .
+COPY hardhat.config.js .
+COPY entrypoint.sh .
+COPY .env .
+
+RUN npm i
+ENTRYPOINT ["/bin/sh", "entrypoint.sh"]

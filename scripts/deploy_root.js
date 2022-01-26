@@ -18,6 +18,7 @@ async function main() {
 
   const FxWnDRootTunnel = await ethers.getContractFactory("FxWnDRootTunnel");
   const WnD = await ethers.getContractFactory("WnD");
+  const Consumables = await ethers.getContractFactory("Consumables");
 
   console.log('=====================================================================================');
   console.log(`DEPLOYED CONTRACT ADDRESS TO:  ${hre.network.name}`);
@@ -27,19 +28,25 @@ async function main() {
   await wnD.deployed();
   console.log(' WnD                     deployed to:', wnD.address);
 
+  const consumables = await Consumables.deploy("Consumables", "Consumables");
+  await consumables.deployed();
+  console.log(' Consumables             deployed to:', consumables.address);
+
   const fxWnDRootTunnel = await FxWnDRootTunnel.deploy(checkpointManager.address, fxRoot.address);
   await fxWnDRootTunnel.deployed();
   console.log(' FxWnDRootTunnel         deployed to:', fxWnDRootTunnel.address);
 
-  const tx = await fxWnDRootTunnel.setContracts(wnD.address);
+  const tx = await fxWnDRootTunnel.setContracts(wnD.address, consumables.address);
   await tx.wait();
-  console.log('Finish.....................')
+  console.log('Finish.....................');
 
-  // // Set child for root
-  // const setERC721Child = await fxWnDRootTunnel.setFxChildTunnel(contract.FxWnDChildTunnel);
-  // console.log(setERC721Child);
-  // await setERC721Child.wait();
-  // console.log("FxWnDChildTunnel set");
+  console.log('Set addAdmin.....................');
+  await consumables.setPaused(false);
+  await consumables.addAdmin(fxWnDRootTunnel.address);
+
+  await wnD.setPaused(false);
+  await wnD.addAdmin(fxWnDRootTunnel.address);
+  console.log('End set addAdmin.....................');
 
   // export deployed contracts to json (using for front-end)
   const contractAddresses = {

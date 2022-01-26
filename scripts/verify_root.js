@@ -25,6 +25,14 @@ async function main() {
   } catch (e) {
     console.log(e.message);
   }
+
+  try {
+    await hre.run("verify:verify", {
+      address: contract.Consumables,
+    });
+  } catch (e) {
+    console.log(e.message);
+  }
 }
 
 main()

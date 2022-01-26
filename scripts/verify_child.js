@@ -19,7 +19,7 @@ async function main() {
   try {
     await hre.run("verify:verify", {
       address: contract.WnD,
-      constructorArguments: ["WnD", "WnD"],
+      constructorArguments: ["HWnD", "HWnD"],
     });
   } catch (e) {
     console.log(e.message);

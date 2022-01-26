@@ -23,18 +23,23 @@ async function main() {
   console.log(`DEPLOYED CONTRACT ADDRESS TO:  ${hre.network.name}`);
   console.log('=====================================================================================');
 
-  const wnD = await WnD.deploy("WnD", "WnD");
-  await wnD.deployed();
-  console.log(' WnD                     deployed to:', wnD.address);
+  // const wnD = await WnD.deploy("HWnD", "HWnD");
+  // await wnD.deployed();
+  // console.log(' WnD                     deployed to:', wnD.address);
 
-  const consumables = await Consumables.deploy("Consumables", "Consumables");
-  await consumables.deployed();
-  console.log(' Consumables             deployed to:', consumables.address);
+  // const consumables = await Consumables.deploy();
+  // await consumables.deployed();
+  // console.log(' Consumables             deployed to:', consumables.address);
 
-  const fxWnDChildTunnel = await FxWnDChildTunnel.deploy(fxChild.address);
-  await fxWnDChildTunnel.deployed();
-  console.log(' FxWnDChildTunnel        deployed to:', fxWnDChildTunnel.address);
+  // const fxWnDChildTunnel = await FxWnDChildTunnel.deploy(fxChild.address);
+  // await fxWnDChildTunnel.deployed();
+  // console.log(' FxWnDChildTunnel        deployed to:', fxWnDChildTunnel.address);
 
+  const fxWnDChildTunnel = FxWnDChildTunnel.attach(ethers.utils.getAddress('0x16d60ad5CdE3Dd5F0101C48f786794FE33a70946'));
+  const consumables = Consumables.attach(ethers.utils.getAddress('0x2a0b4c067dB1C9ac4e684aFB4Cdd84974B5BEeBC'));
+  const wnD = WnD.attach(ethers.utils.getAddress('0x695C1546dee315733031ee35beF2cF67EaC92717'));
+
+  console.log('Set contract.....................');
   const tx = await fxWnDChildTunnel.setContracts(wnD.address, consumables.address);
   await tx.wait();
   console.log('Finish.....................');
@@ -42,6 +47,7 @@ async function main() {
   console.log('Set addAdmin.....................');
   await consumables.setPaused(false);
   await consumables.addAdmin(fxWnDChildTunnel.address);
+  await consumables.setType(1, 10000);
 
   await wnD.setPaused(false);
   await wnD.addAdmin(fxWnDChildTunnel.address);

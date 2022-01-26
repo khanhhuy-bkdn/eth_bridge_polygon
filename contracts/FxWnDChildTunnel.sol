@@ -9,7 +9,12 @@ import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Receiver.sol";
 import "./tokens/IWnD.sol";
 import "./tokens/IConsumables.sol";
 
-contract FxWnDChildTunnel is FxBaseChildTunnel, IERC721Receiver, Ownable, ERC1155Receiver {
+contract FxWnDChildTunnel is
+    FxBaseChildTunnel,
+    IERC721Receiver,
+    Ownable,
+    ERC1155Receiver
+{
     bytes32 public constant DEPOSIT = keccak256("DEPOSIT");
     IWnD public wndChild;
     IConsumables public consumables;
@@ -71,6 +76,15 @@ contract FxWnDChildTunnel is FxBaseChildTunnel, IERC721Receiver, Ownable, ERC115
         );
     }
 
+    event ProcessFromRoot(address sender, bytes data);
+
+    event MessageFromRoot(
+        address _to,
+        uint256[] _wndTokenIds,
+        uint256[] _consumableIds,
+        uint256[] _consumableAmounts
+    );
+
     function _processMessageFromRoot(
         uint256, /* stateId */
         address sender,
@@ -81,6 +95,8 @@ contract FxWnDChildTunnel is FxBaseChildTunnel, IERC721Receiver, Ownable, ERC115
             data,
             (bytes32, bytes)
         );
+
+        emit ProcessFromRoot(sender, data);
 
         if (syncType == DEPOSIT) {
             (
@@ -94,6 +110,13 @@ contract FxWnDChildTunnel is FxBaseChildTunnel, IERC721Receiver, Ownable, ERC115
                 );
 
             _syncDeposit(_to, _wndTokenIds, _consumableIds, _consumableAmounts);
+
+            emit MessageFromRoot(
+                _to,
+                _wndTokenIds,
+                _consumableIds,
+                _consumableAmounts
+            );
         } else {
             revert("Child: INVALID_SYNC_TYPE");
         }
@@ -107,7 +130,10 @@ contract FxWnDChildTunnel is FxBaseChildTunnel, IERC721Receiver, Ownable, ERC115
         uint256[] memory _consumableAmounts
     ) internal {
         // require(_wndTokenIds.length > 0, "Bad WnD lengths");
-        require(_consumableIds.length == _consumableAmounts.length, "Bad Consumable Amounts");
+        require(
+            _consumableIds.length == _consumableAmounts.length,
+            "Bad Consumable Amounts"
+        );
 
         for (uint256 i = 0; i < _wndTokenIds.length; i++) {
             uint256 _tokenId = _wndTokenIds[i];
@@ -118,24 +144,37 @@ contract FxWnDChildTunnel is FxBaseChildTunnel, IERC721Receiver, Ownable, ERC115
             wndChild.transferFrom(address(this), _to, _tokenId);
         }
 
-        if(_consumableIds.length > 0) {
+        if (_consumableIds.length > 0) {
             address[] memory _addresses = new address[](_consumableIds.length);
-            for(uint256 i = 0; i < _consumableIds.length; i++) {
+            for (uint256 i = 0; i < _consumableIds.length; i++) {
                 _addresses[i] = address(this);
             }
 
-            uint256[] memory _balances = consumables.balanceOfBatch(_addresses, _consumableIds);
+            uint256[] memory _balances = consumables.balanceOfBatch(
+                _addresses,
+                _consumableIds
+            );
 
-            for(uint256 i = 0; i < _consumableIds.length; i++) {
+            for (uint256 i = 0; i < _consumableIds.length; i++) {
                 uint256 _currentBalance = _balances[i];
                 // They are requesting more than is held by this contract.
                 //
-                if(_currentBalance < _consumableAmounts[i]) {
-                    consumables.mint(_consumableIds[i], uint16(_consumableAmounts[i] - _currentBalance), address(this));
+                if (_currentBalance < _consumableAmounts[i]) {
+                    consumables.mint(
+                        _consumableIds[i],
+                        uint16(_consumableAmounts[i] - _currentBalance),
+                        address(this)
+                    );
                 }
             }
 
-            consumables.safeBatchTransferFrom(address(this), msg.sender, _consumableIds, _consumableAmounts, "");
+            consumables.safeBatchTransferFrom(
+                address(this),
+                _to,
+                _consumableIds,
+                _consumableAmounts,
+                ""
+            );
         }
     }
 
@@ -162,7 +201,7 @@ contract FxWnDChildTunnel is FxBaseChildTunnel, IERC721Receiver, Ownable, ERC115
         uint256,
         uint256,
         bytes memory
-    ) public override pure returns (bytes4) {
+    ) public pure override returns (bytes4) {
         return this.onERC1155Received.selector;
     }
 
@@ -172,15 +211,16 @@ contract FxWnDChildTunnel is FxBaseChildTunnel, IERC721Receiver, Ownable, ERC115
         uint256[] memory,
         uint256[] memory,
         bytes memory
-    ) public override pure returns (bytes4) {
+    ) public pure override returns (bytes4) {
         return this.onERC1155BatchReceived.selector;
     }
 
-    function testMessageFromRoot(
-        bytes memory data
-    ) external {
+    function testMessageFromRoot(bytes memory data) external {
         // decode incoming data
-        (bytes32 syncType, bytes memory syncData) = abi.decode(data, (bytes32, bytes));
+        (bytes32 syncType, bytes memory syncData) = abi.decode(
+            data,
+            (bytes32, bytes)
+        );
 
         if (syncType == DEPOSIT) {
             (
@@ -194,6 +234,13 @@ contract FxWnDChildTunnel is FxBaseChildTunnel, IERC721Receiver, Ownable, ERC115
                 );
 
             _syncDeposit(_to, _wndTokenIds, _consumableIds, _consumableAmounts);
+
+            emit MessageFromRoot(
+                _to,
+                _wndTokenIds,
+                _consumableIds,
+                _consumableAmounts
+            );
         } else {
             revert("Child: INVALID_SYNC_TYPE");
         }
